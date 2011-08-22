@@ -13,7 +13,8 @@ What is this?
 
 disco-slct is a mapreduce implementation of
 [SLCT](http://ristov.users.sourceforge.net/slct/). According to the SLCT
-website
+website:
+
 > SLCT is a tool that was designed to find clusters in logfile(s), so that
 > each cluster corresponds to a certain line pattern that occurs frequently
 > enough.
