@@ -36,7 +36,7 @@ class WordPruner(Job):
 	@staticmethod
 	def reduce(iter, params):
 		for word, counts in kvgroup(sorted(iter)):
-			yield word, str(sum(counts))
+			yield (word, 0), str(sum(counts))
 	
 	combiner = staticmethod(sum_combiner)
 	
@@ -44,33 +44,37 @@ class WordPruner(Job):
 	reduce_output_stream = discodb_stream
 
 
+class WordToSentence(Job):
+	"""Generates (Word, 1) => Sentence"""
+	map_reader = staticmethod(chain_reader)
+	
+	@staticmethod
+	def map(sentence, threshold):
+		for word in line.split():
+			yield (word, 1), sentence
+
+
 class ClusterConstructor(Job):
-	"""Constructs the cluster elements."""
+	"""Constructs the cluster elements.
+
+	It is crucial the input to this reduce is sorted! In other words, set
+	sort=True.
+	"""
 
 	@staticmethod
-	def map(line, wordcounturl):
-		# TODO: Check if this is a candidate using DiscoDB. In that case, yield
-		words = line.split()
-		querystring = string.join(words, " | ") # TODO: Needs escaping
-		job = Query().run(input=wordcounturl, params=querystring)
-		cluster = {}
-		for word, count in result_iterator(job.wait()):
-			cluster[word] = count
-		if cluster:
-			yield map(lambda word: cluster.get(word, None), words), 1
+        def reduce(iter, params):
+		from itertools import groupby
 		
-        reduce = staticmethod(sum_reduce)
-        combiner = staticmethod(sum_combiner)
-
-
-class Query(Job):
-	"""Job that queries a bunch of DiscoDB instances."""
-	# Necessary?
-	map_input_stream = (input_stream,)
-	map = staticmethod(nop_map)
+		for (word, weight), data in groupby(iter, lambda kv: kv[0]):
+			if weight==0:
+				wordcounts = dict([(word, count) for count in data])
+				last_word = word
+			elif weight==1:
+				if word==last_word
+				
 
 	@staticmethod
-	def map_reader(discodb, size, url, params):
-		for k, vs in discodb.metaquery(params):
-			yield k, list(vs)
+	def partition(key, npartitions):
+		word, _weight = key
+		return hash(word) % npartitions
 
