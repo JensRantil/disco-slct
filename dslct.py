@@ -24,18 +24,27 @@ def run(options, inputurl):
 	"""The actual slct application."""
 	# The number '20' is taken out of thin air just to spread the load a
 	# little.
+	sentenceworder = WordToSentence().run(input=[inputurl])
 	counter = WordCounter().run(input=[inputurl], partitions=20)
-	counter.wait()
 	pruner = WordPruner().run(input=counter.wait(), params=options.support)
 	pruner.wait()
 	counter.purge()
-	constructor = ClusterConstructor().run(input=pruner.wait(),
-						params=pruner.wait())
-	constructor.wait()
-	# TODO: In the future have the option to keep words from job 2 and reuse them
+	joiner = SentenceWordJoiner().run(input=sentenceworder.wait()+pruner.wait(),
+						partitions=20)
+	joiner.wait()
+	sentenceworder.purge()
 	pruner.purge()
-	for commonline, count in result_iterator(constructor.wait()):
+	cconstructor = ClusterConstructor().run(input=joiner.wait(), partitions=20)
+	cconstructor.wait()
+	joiner.purge()
+	summer = Summer().run(input=cconstructor.wait(), partitions=20)
+
+	# TODO: In the future have the option to keep words from job 2 and reuse them
+	for commonline, count in result_iterator(cconstructor.wait()):
 		print count, format_common_line(commonline)
+
+	cconstructor.purge()
+	summer.purge()
 
 
 def main(argv):
