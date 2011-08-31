@@ -48,7 +48,7 @@ class WordToSentence(Job):
 	"""Generates (Word, 1) => Sentence"""
 	@staticmethod
 	def map(sentence, threshold):
-		for word in line.split():
+		for word in sentence.split():
 			yield (word, 1), sentence
 
 
