@@ -7,7 +7,8 @@ from optparse import OptionParser
 
 from disco.core import result_iterator
 
-from dslct_jobs import WordCounter, WordPruner, ClusterConstructor
+from dslct_jobs import WordToSentence, WordCounter, WordPruner, \
+                       SentenceWordJoiner, ClusterConstructor, Summer
 
 
 def format_common_line(arr):
