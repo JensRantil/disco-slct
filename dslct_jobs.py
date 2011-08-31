@@ -61,6 +61,7 @@ class SentenceWordJoiner(Job):
 
 	@staticmethod
         def reduce(iter, params):
+		last_word = None
 		for (word, weight), data in kvgroup(sorted(iter)):
 			if weight==0:
 				counts = data
