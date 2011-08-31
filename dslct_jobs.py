@@ -3,7 +3,7 @@
 from disco.core import result_iterator
 from disco.job import Job
 from disco.worker.classic.func import sum_reduce, sum_combiner, \
-                                      discodb_stream, nop_map, chain_reader, input_stream
+                                      discodb_stream, chain_reader, input_stream
 import string
 from disco.util import kvgroup
 
