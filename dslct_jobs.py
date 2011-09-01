@@ -41,9 +41,6 @@ class WordPruner(Job):
 
 	combiner = staticmethod(sum_combiner)
 
-	# Output format should be DiscoDB for fast retrieval
-	reduce_output_stream = discodb_stream
-
 
 class WordToSentence(Job):
 	"""Generates (Word, 1) => Sentence"""
