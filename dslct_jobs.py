@@ -48,8 +48,9 @@ class WordToSentence(Job):
 
 	@staticmethod
 	def map(sentence, threshold):
-		for word in sentence.split():
-			yield (word, 1), sentence
+		stripped_sentence = sentence.strip()
+		for word in stripped_sentence.split():
+			yield (word, 1), stripped_sentence
 
 
 class SentenceWordJoiner(Job):
