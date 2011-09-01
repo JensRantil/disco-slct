@@ -65,12 +65,12 @@ class SentenceWordJoiner(Job):
 		last_word = None
 		for (word, weight), data in kvgroup(sorted(iter)):
 			if weight==0:
-				counts = data
-				wordcounts = {word: sum(counts)}
+				wordcount = data
+				wordcounts = {word: wordcount}
 				last_word = word
-			elif weight==1:
-				sentence = data
-				if word==last_word:
+			elif weight==1 and word==last_word:
+				sentences = data
+				for sentence in sentences:
 					yield sentence, wordcounts
 
 
