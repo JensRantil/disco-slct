@@ -21,6 +21,19 @@ def format_common_line(arr):
 	return string.join(map(lambda word: word if word else "*"), " ")
 
 
+def print_result(url, label=None):
+	"""Prints the result of a job to stdout.
+
+	Used for debugging.
+	"""
+	if label:
+		print "=" * 40
+		print label
+		print "=" * 40
+	for key, val in result_iterator(url):
+		print "%s: \t%s" % (key, val)
+
+
 def run(options, inputurl):
 	"""The actual slct application."""
 	# The number '20' is taken out of thin air just to spread the load a
@@ -29,16 +42,26 @@ def run(options, inputurl):
 
 	sentenceworder = WordToSentence().run(input=[inputurl])
 	counter = WordCounter().run(input=[inputurl], partitions=N_REDUCE_PARTITIONS)
+	if options.debug:
+		print_result(counter.wait(), "Counter")
 	pruner = WordPruner().run(input=counter.wait(), params=options.support)
 	pruner.wait()
+	if options.debug:
+		print_result(pruner.wait(), "Pruner")
 	counter.purge()
+	if options.debug:
+		print_result(sentenceworder.wait(), "SentenceWorder")
 	joiner = SentenceWordJoiner().run(input=sentenceworder.wait()+pruner.wait(),
 						partitions=N_REDUCE_PARTITIONS)
 	joiner.wait()
+	if options.debug:
+		print_result(joiner.wait(), "Joiner")
 	sentenceworder.purge()
 	pruner.purge()
 	cconstructor = ClusterConstructor().run(input=joiner.wait(), partitions=N_REDUCE_PARTITIONS)
 	cconstructor.wait()
+	if options.debug:
+		print_result(cconstructor.wait(), "Cconstructor")
 	joiner.purge()
 	summer = Summer().run(input=cconstructor.wait(), partitions=N_REDUCE_PARTITIONS)
 
@@ -55,6 +78,9 @@ def main(argv):
 	parser = OptionParser(usage="%prog [options] inputurl")
 	parser.add_option("-s", "--support", type="int",
                           help="the least support count for each fingerprint")
+	parser.add_option("-d", "--debug", action="store_true",
+                          default="false", help="Enable debug output. Only use"
+                                                " this for small input!")
 	(options, args) = parser.parse_args(argv)
 	if len(args) != 2:
 		print "Wrong number of arguments."
