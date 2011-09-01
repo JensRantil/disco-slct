@@ -10,6 +10,7 @@ from disco.util import kvgroup
 
 class WordCounter(Job):
 	"""Counts number of occurrences of words."""
+	map_reader = staticmethod(chain_reader)
 
 	@staticmethod
 	def map(line, _params):
@@ -46,6 +47,8 @@ class WordPruner(Job):
 
 class WordToSentence(Job):
 	"""Generates (Word, 1) => Sentence"""
+	map_reader = staticmethod(chain_reader)
+
 	@staticmethod
 	def map(sentence, threshold):
 		for word in sentence.split():
