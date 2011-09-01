@@ -34,6 +34,11 @@ def print_result(url, label=None):
 		print "%s: \t%s" % (key, val)
 
 
+def do_purging(job, options):
+	if options.purge:
+		job.purge()
+
+
 def run(options, inputurl):
 	"""The actual slct application."""
 	# The number '20' is taken out of thin air just to spread the load a
@@ -48,7 +53,7 @@ def run(options, inputurl):
 	pruner.wait()
 	if options.debug:
 		print_result(pruner.wait(), "Pruner")
-	counter.purge()
+	do_purging(counter, options)
 	if options.debug:
 		print_result(sentenceworder.wait(), "SentenceWorder")
 	joiner = SentenceWordJoiner().run(input=sentenceworder.wait()+pruner.wait(),
@@ -56,21 +61,21 @@ def run(options, inputurl):
 	joiner.wait()
 	if options.debug:
 		print_result(joiner.wait(), "Joiner")
-	sentenceworder.purge()
-	pruner.purge()
+	do_purging(sentenceworder, options)
+	do_purging(pruner, options)
 	cconstructor = ClusterConstructor().run(input=joiner.wait(), partitions=N_REDUCE_PARTITIONS)
 	cconstructor.wait()
 	if options.debug:
 		print_result(cconstructor.wait(), "Cconstructor")
-	joiner.purge()
+	do_purging(joiner, options)
 	summer = Summer().run(input=cconstructor.wait(), partitions=N_REDUCE_PARTITIONS)
 
 	# TODO: In the future have the option to keep words from job 2 and reuse them
 	for commonline, count in result_iterator(cconstructor.wait()):
 		print count, format_common_line(commonline)
 
-	cconstructor.purge()
-	summer.purge()
+	do_purging(cconstructor, options)
+	do_purging(summer, options)
 
 
 def main(argv):
@@ -81,6 +86,10 @@ def main(argv):
 	parser.add_option("-d", "--debug", action="store_true",
                           default="false", help="Enable debug output. Only use"
                                                 " this for small input!")
+	parser.add_option("-N", "--no-purging", dest="purge",
+                          action="store_false", default="true",
+                          help="Disable automatic purging of used"
+                                               " job results.")
 	(options, args) = parser.parse_args(argv)
 	if len(args) != 2:
 		print "Wrong number of arguments."
