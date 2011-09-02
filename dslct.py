@@ -4,6 +4,7 @@ author -- Jens Rantil <jens.rantil@gmail.com>
 """
 import sys
 from optparse import OptionParser
+import string
 
 from disco.core import result_iterator
 
@@ -18,7 +19,8 @@ def format_common_line(arr):
 	>>> format_common_line(["hej", "ba", None]):
 	'hej ba *'
 	"""
-	return string.join(map(lambda word: word if word else "*"), " ")
+	words = map(lambda word: word if word else "*", arr)
+	return string.join(words, " ")
 
 
 def print_result(url, label=None):
