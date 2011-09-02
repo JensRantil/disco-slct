@@ -8,6 +8,10 @@ import string
 from disco.util import kvgroup
 
 
+# Creating an alias for the built-in reduce function in Python
+real_reduce = reduce
+
+
 class WordCounter(Job):
 	"""Counts number of occurrences of words."""
 	map_reader = staticmethod(chain_reader)
@@ -97,7 +101,9 @@ def combine(dict1, dict2):
 	"""
 	from itertools import chain, groupby
 	newmap_items = groupby(sorted(chain(dict1.iteritems(), dict2.iteritems())), lambda item: item[0])
-	return dict([(word, sum([item[1] for item in items])) for word, items in newmap_items])
+	result = dict([(word, sum([item[1] for item in items])) for word, items in newmap_items])
+	assert result is not None, "Combine had a result that was None. It should never be."
+	return result
 
 
 class ClusterConstructor(Job):
@@ -110,7 +116,8 @@ class ClusterConstructor(Job):
 	@staticmethod
 	def reduce(iter, params):
 		for sentence, wordcounts in kvgroup(sorted(iter)):
-			unionized_wordcounts = reduce(wordcounts, combine, {})
+			unionized_wordcounts = real_reduce(combine, wordcounts, {})
+			assert unionized_wordcounts is not None, "Wordcounts were None in the reduce method: %s %s" % (combine, list(wordcounts))
 			yield [word if unionized_wordcounts.has_key(word) else None for word in sentence.split()], 1
 
 
