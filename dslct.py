@@ -86,7 +86,7 @@ def main(argv):
 	parser.add_option("-s", "--support", type="int",
                           help="the least support count for each fingerprint")
 	parser.add_option("-d", "--debug", action="store_true",
-                          default="false", help="Enable debug output. Only use"
+                          default=False, help="Enable debug output. Only use"
                                                 " this for small input!")
 	parser.add_option("-N", "--no-purging", dest="purge",
                           action="store_false", default="true",
