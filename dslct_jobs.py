@@ -92,6 +92,8 @@ def combine(dict1, dict2):
 	{'a': 5, 'b': 6}
 	>>> combine({'a': 5}, {'a': 6})
 	{'a': 11}
+	>>> combine({}, {'a': 5})
+	{'a': 5}
 	"""
 	from itertools import chain, groupby
 	newmap_items = groupby(sorted(chain(dict1.iteritems(), dict2.iteritems())), lambda item: item[0])
