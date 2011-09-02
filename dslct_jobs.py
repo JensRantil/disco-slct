@@ -94,8 +94,8 @@ def combine(dict1, dict2):
 	{'a': 11}
 	"""
 	from itertools import chain, groupby
-	newmap_items = groupby(sorted(chain(a.iteritems(), b.iteritems())), lambda item: item[0])
-	return dict([(word, sum(counts)) for word, counts in newmap_items])
+	newmap_items = groupby(sorted(chain(dict1.iteritems(), dict2.iteritems())), lambda item: item[0])
+	return dict([(word, sum([item[1] for item in items])) for word, items in newmap_items])
 
 
 class ClusterConstructor(Job):
