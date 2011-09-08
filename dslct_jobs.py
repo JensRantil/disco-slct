@@ -3,13 +3,18 @@
 from disco.core import result_iterator
 from disco.job import Job
 from disco.worker.classic.func import sum_reduce, sum_combiner, \
-                                      discodb_stream, nop_map, chain_reader, input_stream
+                                      discodb_stream, chain_reader, input_stream
 import string
 from disco.util import kvgroup
 
 
+# Creating an alias for the built-in reduce function in Python
+real_reduce = reduce
+
+
 class WordCounter(Job):
 	"""Counts number of occurrences of words."""
+	map_reader = staticmethod(chain_reader)
 
 	@staticmethod
 	def map(line, _params):
@@ -36,41 +41,88 @@ class WordPruner(Job):
 	@staticmethod
 	def reduce(iter, params):
 		for word, counts in kvgroup(sorted(iter)):
-			yield word, str(sum(counts))
-	
+			yield (word, 0), str(sum(counts))
+
 	combiner = staticmethod(sum_combiner)
-	
-	# Output format should be DiscoDB for fast retrieval
-	reduce_output_stream = discodb_stream
+
+
+class WordToSentence(Job):
+	"""Generates (Word, 1) => Sentence"""
+	map_reader = staticmethod(chain_reader)
+
+	@staticmethod
+	def map(sentence, threshold):
+		stripped_sentence = sentence.strip()
+		for word in stripped_sentence.split():
+			yield (word, 1), stripped_sentence
+
+
+class SentenceWordJoiner(Job):
+	"""Joins word counts and sentences.
+	Input: [(string:Word, 0) => int:WordCount | (string:Word, 1) => [string:Sentence]]
+	Output: [Sentence => [{Word: WordCount}]]
+	"""
+	map_reader = staticmethod(chain_reader)
+
+	@staticmethod
+        def reduce(iter, params):
+		last_word = None
+		for (word, weight), data in kvgroup(sorted(iter)):
+			if weight==0:
+				wordcount = list(data)
+				wordcounts = {word: sum([int(count) for count in wordcount[0]])}
+				last_word = word
+			elif weight==1 and word==last_word:
+				sentences = list(data)
+				for sentence in sentences:
+					yield sentence, wordcounts
+
+
+	@staticmethod
+	def partition(key, npartitions):
+		word, _weight = key
+		return hash(word) % npartitions
+
+
+def combine(dict1, dict2):
+	"""Combine two wordcount dicts.
+
+	Example:
+	>>> combine({}, {'a':5})
+	{'a': 5}
+	>>> combine({'a': 5}, {'b': 6})
+	{'a': 5, 'b': 6}
+	>>> combine({'b': 6}, {'a': 5})
+	{'a': 5, 'b': 6}
+	>>> combine({'a': 5}, {'a': 6})
+	{'a': 11}
+	>>> combine({}, {'a': 5})
+	{'a': 5}
+	"""
+	from itertools import chain, groupby
+	newmap_items = groupby(sorted(chain(dict1.iteritems(), dict2.iteritems())), lambda item: item[0])
+	result = dict([(word, sum([item[1] for item in items])) for word, items in newmap_items])
+	assert result is not None, "Combine had a result that was None. It should never be."
+	return result
 
 
 class ClusterConstructor(Job):
-	"""Constructs the cluster elements."""
+	"""Constructs the clusters.
+	Input: [Sentence => [{Word: WordCount}]]
+	Output: [[Word | None] => 1]
+	"""
+	map_reader = staticmethod(chain_reader)
 
 	@staticmethod
-	def map(line, wordcounturl):
-		# TODO: Check if this is a candidate using DiscoDB. In that case, yield
-		words = line.split()
-		querystring = string.join(words, " | ") # TODO: Needs escaping
-		job = Query().run(input=wordcounturl, params=querystring)
-		cluster = {}
-		for word, count in result_iterator(job.wait()):
-			cluster[word] = count
-		if cluster:
-			yield map(lambda word: cluster.get(word, None), words), 1
-		
-        reduce = staticmethod(sum_reduce)
-        combiner = staticmethod(sum_combiner)
+	def reduce(iter, params):
+		for sentence, wordcounts in kvgroup(sorted(iter)):
+			unionized_wordcounts = real_reduce(combine, wordcounts, {})
+			assert unionized_wordcounts is not None, "Wordcounts were None in the reduce method: %s %s" % (combine, list(wordcounts))
+			yield [word if unionized_wordcounts.has_key(word) else None for word in sentence.split()], 1
 
 
-class Query(Job):
-	"""Job that queries a bunch of DiscoDB instances."""
-	# Necessary?
-	map_input_stream = (input_stream,)
-	map = staticmethod(nop_map)
-
-	@staticmethod
-	def map_reader(discodb, size, url, params):
-		for k, vs in discodb.metaquery(params):
-			yield k, list(vs)
+class Summer(Job):
+	map_reader = staticmethod(chain_reader)
+	reduce = staticmethod(sum_reduce)
+	combiner = staticmethod(sum_combiner)
 

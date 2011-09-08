@@ -1,13 +1,6 @@
 Readme for disco-slct
 =====================
 
-A WARNING
----------
-This is work in progress. Currently the code does not fully work as it is a
-bit tricky to get Disco jobs to execute Disco jobs. Work is [currently on its
-way to solve this
-issue](http://groups.google.com/group/disco-dev/browse_thread/thread/e877d7c3017dbbbe).
-
 What is this?
 -------------
 
