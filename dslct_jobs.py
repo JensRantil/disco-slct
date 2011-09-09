@@ -118,7 +118,7 @@ class ClusterConstructor(Job):
 		for sentence, wordcounts in kvgroup(sorted(iter)):
 			unionized_wordcounts = real_reduce(combine, wordcounts, {})
 			assert unionized_wordcounts is not None, "Wordcounts were None in the reduce method: %s %s" % (combine, list(wordcounts))
-			yield [word if unionized_wordcounts.has_key(word) else None for word in sentence.split()], 1
+			yield tuple([word if unionized_wordcounts.has_key(word) else None for word in sentence.split()]), 1
 
 
 class Summer(Job):
