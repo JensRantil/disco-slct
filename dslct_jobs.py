@@ -10,7 +10,6 @@ from disco.util import kvgroup
 
 # Creating an alias for the built-in reduce function in Python
 real_reduce = reduce
-real_map = map
 
 
 class WordCounter(Job):
@@ -107,22 +106,6 @@ def combine(dict1, dict2):
 	return result
 
 
-def format_common_line(arr):
-	"""Formats a common line from array form to string form.
-
-	Example:
-	>>> format_common_line(["hej", "ba", None])
-	'hej ba *'
-	>>> format_common_line(['Hej'])
-	'Hej'
-	"""
-	words = real_map(lambda word: word if word else "*", arr)
-	try:
-		return string.join(words, " ")
-	except TypeError, e:
-		assert False, "%s %s" % (words,arr)
-
-
 class ClusterConstructor(Job):
 	"""Constructs the clusters.
 	Input: [Sentence => [{Word: WordCount}]]
@@ -135,9 +118,7 @@ class ClusterConstructor(Job):
 		for sentence, wordcounts in kvgroup(sorted(iter)):
 			unionized_wordcounts = real_reduce(combine, wordcounts, {})
 			assert unionized_wordcounts is not None, "Wordcounts were None in the reduce method: %s %s" % (combine, list(wordcounts))
-			patternarr = [word if unionized_wordcounts.has_key(word) else None for word in sentence.split()]
-			pattern = format_common_line(patternarr)
-			yield pattern, 1
+			yield [word if unionized_wordcounts.has_key(word) else None for word in sentence.split()], 1
 
 
 class Summer(Job):
