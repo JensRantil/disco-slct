@@ -73,7 +73,7 @@ def run(options, inputurl):
 	summer = Summer().run(input=cconstructor.wait(), partitions=N_REDUCE_PARTITIONS)
 
 	# TODO: In the future have the option to keep words from job 2 and reuse them
-	for commonline, count in result_iterator(cconstructor.wait()):
+	for commonline, count in result_iterator(summer.wait()):
 		print count, format_common_line(commonline)
 
 	do_purging(cconstructor, options)
