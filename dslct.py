@@ -4,23 +4,11 @@ author -- Jens Rantil <jens.rantil@gmail.com>
 """
 import sys
 from optparse import OptionParser
-import string
 
 from disco.core import result_iterator
 
 from dslct_jobs import WordToSentence, WordCounter, WordPruner, \
                        SentenceWordJoiner, ClusterConstructor, Summer
-
-
-def format_common_line(arr):
-	"""Formats a common line from array form to string form.
-
-	Example:
-	>>> format_common_line(["hej", "ba", None]):
-	'hej ba *'
-	"""
-	words = map(lambda word: word if word else "*", arr)
-	return string.join(words, " ")
 
 
 def print_result(url, label=None):
@@ -73,8 +61,8 @@ def run(options, inputurl):
 	summer = Summer().run(input=cconstructor.wait(), partitions=N_REDUCE_PARTITIONS)
 
 	# TODO: In the future have the option to keep words from job 2 and reuse them
-	for commonline, count in result_iterator(cconstructor.wait()):
-		print count, format_common_line(commonline)
+	for commonline, count in result_iterator(summer.wait()):
+		print count, commonline
 
 	do_purging(cconstructor, options)
 	do_purging(summer, options)
