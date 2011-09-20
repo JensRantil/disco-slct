@@ -115,6 +115,7 @@ class ClusterConstructor(Job):
 
 	@staticmethod
 	def reduce(iter, params):
+		# TODO: Implement this as a map instead to maximize parallelism and locality
 		for sentence, wordcounts in kvgroup(sorted(iter)):
 			unionized_wordcounts = real_reduce(combine, wordcounts, {})
 			assert unionized_wordcounts is not None, "Wordcounts were None in the reduce method: %s %s" % (combine, list(wordcounts))
