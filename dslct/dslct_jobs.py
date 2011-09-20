@@ -27,10 +27,8 @@ class WordCounter(Job):
 
 
 class WordPruner(Job):
-	"""Prunes words that are not frequent enough.
-
-	Output is written to DiscoDB for fast indexing.
-	"""
+	"""Prunes words that are not frequent enough."""
+	
 	map_reader = staticmethod(chain_reader)
 
 	@staticmethod
